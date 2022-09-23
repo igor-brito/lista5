@@ -8,10 +8,16 @@ output:
     toc_depth: 2
     toc_float: true
     number_sections: true
+bibliography: referencias.bib
 ---
 
 ```{r setup, include=FALSE}
 # Esse chunk não irá aparecer no slide por não ser um resultado da análise
+
+# Não utilizei as referências automáticas porque tive problema com o arquivo
+# "abntex2.cls", ou seja, não consegui colocar as referências no padrão ABNT.
+# Deixar as referências com o padrão "Chicago" deixaria algumas citações com
+# o "and" ao invés de "e".
 
 # Link no GitHub Pages:
 # https://igor-brito.github.io/lista5
@@ -23,9 +29,6 @@ knitr::opts_chunk$set(echo = FALSE, digits = 1)
 # Limpa memória
 rm(list = ls())
 gc()
-
-# Definindo o diretorio de trabalho como do arquivo local
-#setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
 # Carrega pacotes usados no código
 library(tidyverse)
@@ -73,11 +76,11 @@ dados_trab_final <- read.csv2("dados/dados_trab_final.csv")
 #Amostra aleatória dos dados brutos, foi definida uma semente
 #de modo a promover a reprodutibilidade.
 set.seed(15654)
-
 amostra <- dados_trab_final %>%
   sample_n(size = 5) %>% 
   arrange(ano)
 
+#Mostra os dados em tabela
 kable(amostra)
 
 ```
@@ -90,7 +93,6 @@ O próximo passo então é o cômputo das estatísticas descritivas das variáve
 descritiva <- dados_trab_final %>%
   select(tam_cp, qtd_part) %>%
   summary()
-
 descritiva
 
 ```
@@ -125,17 +127,6 @@ modelo_regressao <- lm(tam_cp ~ qtd_part, data = dados_trab_final)
 #Tabela de regressão linear
 kable(get_regression_table(modelo_regressao, digits = 3))
 
-#regression_points <- get_regression_points(modelo_regressao)
-
-# ggplot(regression_points, aes(x = residual)) +
-#  geom_histogram(binwidth = 2, color = "white") +
-#  labs(x = "Residual")
-
-#ggplot(regression_points, aes(x = qtd_part, y = residual)) +
-#  geom_point() +
-#  labs(x = "Qtd de partidos", y = "Residual") +
-#  geom_hline(yintercept = 0, col = "blue", size = 1)
-
 ```
 
 O coeficiente estimado de $qtd\_part$ é 1.9 aproximadamente. Ou seja, para cada acréscimo de um partido no gabinete, existe um acréscimo associado, em média, de 1.9 órgãos no centro presidencial. O intervalo de confiança de 95% para esse parâmetro é [1.335, 2.367]. O p-valor é baixíssimo (< 0.000), portanto, esse resultado é significante estatisticamente aos níveis convencionais de confiança (10%, 5%, 1% e 0.1%).
@@ -145,12 +136,14 @@ Contudo, a tabela de regressão acima apresenta os intervalos de confiança e o 
 O p-valor do teste de hipósetes deu aproximadamente 0, conforme pode ser visto abaixo. Esse resultado corrobora a significância estatística do resultado da tabela de regressão.
 
 ```{r, echo=F}
+#Cria a distribuição nula (supondo que b_1 = 0)
 null_distn_slope <- dados_trab_final %>% 
   specify(formula = tam_cp ~ qtd_part) %>%
   hypothesize(null = "independence") %>% 
   generate(reps = 1000, type = "permute") %>% 
   calculate(stat = "slope")
 
+#Calcula o p-valor
 null_distn_slope %>% 
   get_p_value(obs_stat = 1.851, direction = "both")
 
@@ -159,11 +152,13 @@ null_distn_slope %>%
 O intervalo de confiança de 95% construído por meio da reamostragem (bootstrap) com o método do percentil é:
 
 ```{r, echo=F}
+#Cria a distribuição bootstrap (reamostragem)
 bootstrap_distn_slope <- dados_trab_final %>% 
   specify(formula = tam_cp ~ qtd_part) %>%
   generate(reps = 1000, type = "bootstrap") %>% 
   calculate(stat = "slope")
 
+#Calcula o intervalo de confinaça de 95% pelo método do percentil
 percentile_ci <- bootstrap_distn_slope %>% 
   get_confidence_interval(type = "percentile", level = 0.95)
 percentile_ci
@@ -220,13 +215,12 @@ Contudo, os resultados aqui apresentados devem ser interpretados com bastante ca
 Uma agenda de pesquisa futura pode expandir a quantidade de casos analisados, aumentando a quantidade de observações, e aplicar outros modelos estatísticos mais avançados para lidar com as limitações deste trabalho.
 
 # Referências {-}
-
 AMORIM NETO, Octavio. Cabinets and coalitional presidentialism. In: AMES, Barry (ed.). Routledge Handbook of Brazilian Politics. New York: Routledge, 2019. p. 293-312.
 
 INÁCIO, Magna; LLANOS, Mariana. The institutional presidency from a comparative perspective: Argentina and Brazil since the 1980s. Brazilian Political Science Review, São Paulo, v. 9, n. 1, p. 39-64, 2015. 
 
 ISMAY, Chester; KIM, Albert Y. Statistical inference via data science: A ModernDive into R and the tidyverse. Chapman and Hall/CRC, 2019.
 
-LANZARO, Jorge. Introducción. In: LANZARO, Jorge. (Ed.). Centro Presidencial: presidencias y centros de gobierno en América Latina, Estados Unidos y Europa. Madrid: Tecnos, 2018. p. 13–38. 
+LANZARO, Jorge. Introducción. In: LANZARO, Jorge. (Ed.). Centro Presidencial: presidencias y centros de gobierno en América Latina, Estados Unidos y Europa. Madrid: Tecnos, 2018. p. 13–38.
 
 
